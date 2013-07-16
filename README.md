@@ -18,7 +18,7 @@ Një version i PHP-së më i lartë se 5.3.0 dhe kompilim i PHP-së me [OpenSSL]
 
 Kjo është strategji që varet nga aplikacioni apo framework-u që po përdorni. Më poshtë keni mënyrat në dispozicion:
 
-1- Ngarkimi manual.
+### Ngarkim manual.
 
 ```php
 <?php
@@ -27,9 +27,32 @@ require_once('src/Raiffeisen/Notify.php');
 ?>
 ```
 
-2- Duke përdorur një autoloader, qoftë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-0.
+### Autoloader
 
-3- Composer. Së shpejti!
+Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-0.
+
+### Composer
+
+[Composer](http://getcomposer.org/) është në fakt mënyra më e lehtë dhe e këshilluar për çdo librari. Fillimisht, përfshini paketën në composer.json:
+
+```json
+"require": { "fadion/raiffeisen": "dev-master" }
+```
+
+Instalojeni paketën:
+
+$ composer install
+
+Fillojeni ta përdorni
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+$auth = new Raiffeisen\Authenticate(...);
+$notify = new Raiffeisen\Notify(...);
+?>
+```
 
 ## Autorizimi
 
