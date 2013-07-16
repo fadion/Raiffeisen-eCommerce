@@ -18,7 +18,7 @@ Një version i PHP-së më i lartë se 5.3.0 dhe kompilim i PHP-së me [OpenSSL]
 
 Kjo është strategji që varet nga aplikacioni apo framework-u që po përdorni. Më poshtë keni mënyrat në dispozicion:
 
-### Ngarkim manual.
+### Ngarkim manual
 
 ```php
 <?php
@@ -41,7 +41,7 @@ Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.p
 
 Instalojeni paketën:
 
-$ composer install
+	$ composer install
 
 Fillojeni ta përdorni
 
