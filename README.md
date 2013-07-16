@@ -10,6 +10,10 @@ Këto klasa bëjnë pikërisht punën që një programues s'ka nevojë ta bëjë
 
 Krahas kodit, do të lexoni edhe disa këshilla apo praktika të mira për implementimin e sistemit të Raiffeisen.
 
+## Varësitë
+
+Një version i PHP-së më i lartë se 5.3.0 dhe kompilim i PHP-së me [OpenSSL](http://www.php.net/manual/en/openssl.installation.php). Kjo e fundit duhet për shënjimin e çertifikatës.
+
 ## Ngarkimi i Klasave
 
 Kjo është strategji që varet nga aplikacioni apo framework-u që po përdorni. Më poshtë keni mënyrat në dispozicion:
