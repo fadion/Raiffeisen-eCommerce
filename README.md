@@ -8,11 +8,13 @@ Proçesi i implementimit të pagesës është pak i komplikuar nëse nuk di ç'b
 
 Këto klasa bëjnë pikërisht punën që një programues s'ka nevojë ta bëjë: gjenerimin e formatit të duhur të signature për autorizim, leximin e kërkesës nga Gateway dhe dërgimin e sinjalit të suksesit apo të kthimit mbrapsht të transkasionit. Gjithçka tjetër mbetet në dorën tuaj.
 
+Krahas kodit, do të lexoni edhe disa këshilla apo praktika të mira për implementimin e sistemit të Raiffeisen.
+
 ## Ngarkimi i Klasave
 
 Kjo është strategji që varet nga aplikacioni apo framework-u që po përdorni. Më poshtë keni mënyrat në dispozicion:
 
-1. Ngarkimi manual.
+1- Ngarkimi manual.
 
 ```php
 <?php
@@ -21,9 +23,9 @@ require_once('src/Raiffeisen/Notify.php');
 ?>
 ```
 
-2. Duke përdorur një autoloader, qoftë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-0.
+2- Duke përdorur një autoloader, qoftë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-0.
 
-3. Composer. Së shpejti!
+3- Composer. Së shpejti!
 
 ## Autorizimi
 
@@ -53,7 +55,7 @@ $options = array(
 	'cert_dir' => 'cert/dir' // Direktoria ku ndodhet certifikata
 );
 
-$auth = new Raiffeisen\Authenticate('111', '222', 3500);
+$auth = new Raiffeisen\Authenticate('111', '222', 3500, $options);
 $data = $auth->generate();
 ?>
 ```
@@ -70,14 +72,14 @@ $data = $auth->generate();
 ```html
 <form method="post" action="https://url/e/gateway">
 	<input type="hidden" name="Version" value="1">
-	<input type="hidden" name="MerchantID" value="{{ $data['merchant_id'] }}">
-	<input type="hidden" name="TerminalID" value="{{ $data['terminal_id'] }}">
-	<input type="hidden" name="TotalAmount" value="{{ $data['total'] }}">
-	<input type="hidden" name="Currency" value="{{ $data['currency_id'] }}">
+	<input type="hidden" name="MerchantID" value="<?php echo $data['merchant_id']; ?>">
+	<input type="hidden" name="TerminalID" value="<?php echo $data['terminal_id']; ?>">
+	<input type="hidden" name="TotalAmount" value="<?php echo $data['total']; ?>">
+	<input type="hidden" name="Currency" value="<?php echo $data['currency_id']; ?>">
 	<input type="hidden" name="locale" value="sq">
-	<input type="hidden" name="PurchaseTime" value="{{ $data['purchase_time'] }}">
-	<input type="hidden" name="OrderID" value="{{ $data['order_id'] }}">
-	<input type="hidden" name="Signature" value="{{ $data['signature'] }}">
+	<input type="hidden" name="PurchaseTime" value="<?php echo $data['purchase_time']; ?>">
+	<input type="hidden" name="OrderID" value="<?php echo $data['order_id']; ?>">
+	<input type="hidden" name="Signature" value="<?php echo $data['signature']; ?>">
 	<button type="submit">Paguaj</button>
 </form>
 ```
@@ -90,13 +92,13 @@ Pas autorizimit dhe dërgimit të të dhënave, blerësit mund të fusë kartën
 
 2. Përmes komunikimit direkt midis serverit të Gateway dhe serverit tuaj, ku dërgohet një kërkesë (me cURL apo çfarëdo) që përmban të dhënat POST tek një adresë e faqes tuaj. Këtu mund të validoni porosinë, ta ruani në databazë, të kryeni çdo veprim që duhet dhe në fund të jepni sinjalin Pozitiv apo Negativ. Vetëm nëse ju ktheni përgjigje pozitive, banka do e proçesojë transaksionin.
 
-Ne do merremi me mënyrën e dytë dhe çdo njeri me pak sens logjik, duhet të ndjekë të njëjtën rrugë.
+Ne do merremi me mënyrën e dytë dhe çdo njeri me pak sens logjik, duhet të ndjekë të njëjtën rrugë. Dokumentimi i Raiffeisen do ju shpjegojë implementimin e të dyja mënyrave.
 
-Duke qenë se kërkesa nga serveri i Gateway dërgohet si POST, edhe klasa merr disa të dhëna përmes saj. Nisja e klasës duhet kryer duke i kaluar 3 parametra: adresa e suksesit (absoulte), adresa e deshtimit (absoulte) dhe superglobalen $_POST.
+Duke qenë se kërkesa nga serveri i Gateway dërgohet si POST, edhe klasa merr disa të dhëna përmes saj. Nisja e klasës duhet kryer duke i kaluar 3 parametra: adresa e suksesit (absolute), adresa e deshtimit (absolute) dhe superglobalen $_POST.
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('adresa/suksesit', 'adresa/deshtimit', $_POST);
+$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 ?>
 ```
 
@@ -104,7 +106,7 @@ Ofrohen disa metoda për të thjeshtësuar përgjigjen.
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('adresa/suksesit', 'adresa/deshtimit', $_POST);
+$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 
 // Kontrollon nese kerkesa nga serveri
 // eshte e vlefshme. Parametri qe duhet
@@ -126,7 +128,7 @@ Një rend pune tipik do të ishte si në vijim:
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('adresa/suksesit', 'adresa/deshtimit', $_POST);
+$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 
 if ($notify->isValid('1.1.1.1'))
 {
