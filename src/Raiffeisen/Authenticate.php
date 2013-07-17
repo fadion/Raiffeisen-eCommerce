@@ -11,8 +11,7 @@ namespace Raiffeisen;
  *
  * @package Raiffeisen\Authenticate
  * @author Fadion Dashi
- * @version 1.0
- * @since 1.0
+ * @version 1.1.0
  */
 class Authenticate
 {
@@ -28,6 +27,11 @@ class Authenticate
 	private $terminal_id;
 
 	/**
+	 * @var mixed Totali i parave qe duhen paguar.
+	 */
+	private $total_amount;
+
+	/**
 	 * @var string Koha e blerjes.
 	 */
 	private $purchase_time;
@@ -41,6 +45,11 @@ class Authenticate
 	 * @var string ID e valutes. Paravendosur ne "LEK".
 	 */
 	private $currency_id = '008';
+
+	/**
+	 * @var string ID e valutes. Paravendosur ne "LEK".
+	 */
+	private $session_data = '';
 
 	/**
 	 * @var string Direktoria ku ndodhet certifikata.
@@ -62,15 +71,15 @@ class Authenticate
 	 * 
 	 * @param string $merchant_id
 	 * @param string $terminal_id
-	 * @param mixed $total Totali i parave qe duhen paguar
+	 * @param mixed $total_amount Totali i parave qe duhen paguar
 	 * @param array $options Opsione ekstra: 'purchase_time', 'order_id', 'currency_id', 'cert_dir'
 	 * @return void
 	 */
-	public function __construct($merchant_id, $terminal_id, $total, $options = array())
+	public function __construct($merchant_id, $terminal_id, $total_amount, $options = array())
 	{
 		$this->merchant_id = $merchant_id;
 		$this->terminal_id = $terminal_id;
-		$this->total = $total;
+		$this->total_amount = $total_amount;
 
 		$this->readOptions($options);
 		$this->defaultOptions();
@@ -82,13 +91,13 @@ class Authenticate
 	 * 
 	 * @param string $merchant_id
 	 * @param string $terminal_id
-	 * @param mixed $total
+	 * @param mixed $total_amount
 	 * @param array $options
 	 * @return Authenticate
 	 */
-	public static function factory($merchant_id, $terminal_id, $total, $options = array())
+	public static function factory($merchant_id, $terminal_id, $total_amount, $options = array())
 	{
-		return new self($merchant_id, $terminal_id, $total, $options = array());
+		return new self($merchant_id, $terminal_id, $total_amount, $options = array());
 	}
 
 	/**
@@ -101,12 +110,31 @@ class Authenticate
 		// Nese s'ka opsione, mos vazhdo.
 		if (! count($options)) return;
 
-		if (isset($options['purchase_time']))$this->purchase_time = $options['purchase_time'];
-		if (isset($options['order_id'])) $this->order_id = $options['order_id'];
+		if (isset($options['purchase_time'])) $this->purchase_time = $options['purchase_time'];
+
+		if (isset($options['order_id']))
+		{
+			// ID e porosise mund te kalohet edhe si funksion
+			// anonim. is_callable() kontrollon nese eshte i tille.
+			if (is_callable($options['order_id']))
+			{
+				// Vendos vleren e order_id me ate qe kthen funksioni.
+				$this->order_id = call_user_func($options['order_id']);
+			}
+			else
+			{
+				$this->order_id = $options['order_id'];
+			}
+		}
 		
-		if (isset($options['currency_id']) and
-			isset($this->currency_codes[$options['currency_id']])) $this->currency_id = $this->currency_codes[$options['currency_id']];
-		
+		// Valuta duhet te jete vendosur dhe te egzistoje tek
+		// lista e valutave te pranuara.
+		if (isset($options['currency_id']) and isset($this->currency_codes[$options['currency_id']]))
+		{
+			$this->currency_id = $this->currency_codes[$options['currency_id']];
+		}
+
+		if (isset($options['session_data'])) $this->session_data = $options['session_data'];
 		if (isset($options['cert_dir'])) $this->cert_dir = rtrim($options['cert_dir'], '/\\');
 	}
 
@@ -139,23 +167,24 @@ class Authenticate
 		return array(
 			'merchant_id' => $this->merchant_id,
 			'terminal_id' => $this->terminal_id,
-			'total' => $this->total,
+			'total_amount' => $this->total_amount,
 			'currency_id' => $this->currency_id,
 			'purchase_time' => $this->purchase_time,
 			'order_id' => $this->order_id,
+			'session_data' => $this->session_data,
 			'signature' => $signature
 		);
 	}
 
 	/**
-	 * Gjeneron signature ne formatin e duhur.
+	 * Gjeneron signature.
 	 * 
 	 * @return string
 	 */
 	private function generateSignature()
 	{
 		// Formati i te dhenave ne baze te manualit.
-		$data = "$this->merchant_id;$this->terminal_id;$this->purchase_time;$this->order_id;$this->currency_id;$this->total;;";
+		$data = $this->formatData();
 
 		// Lexo certifikaten dhe shenjoje me OpenSSL.
 		$key = file_get_contents("$this->cert_dir/$this->merchant_id.pem");
@@ -164,6 +193,17 @@ class Authenticate
 		openssl_free_key($key);
 
 		return $signature = base64_encode($signature);
+	}
+
+	/**
+	 * Formaton te dhenat per tu perdorur ne
+	 * gjenerimin e signature.
+	 * 
+	 * @return string
+	 */
+	public function formatData()
+	{
+		return "$this->merchant_id;$this->terminal_id;$this->purchase_time;$this->order_id;$this->currency_id;$this->total_amount;$this->session_data;";
 	}
 
 }

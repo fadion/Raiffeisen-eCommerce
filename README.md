@@ -4,7 +4,7 @@ Klasa të thjeshta në PHP për të lehtësuar autorizimin dhe proçesimin e pag
 
 ## Pse duhet atëherë?
 
-Proçesi i implementimit të pagesës është pak i komplikuar nëse nuk di ç'bën dhe për fat të keq, manualet shoqëruese nuk ndihmojnë sa duhet. Formati i gjenerimit të signature, të dhënat që dërgohen dhe mënyra se si serveri i Gateway i dërgon dhe pret kërkesat, mund të jenë irrituese për programuesit fillestarë. Fundja, nuk është edhe aq zbavitëse kur punon gjithë ditën dhe në fund kupton se mesazhi i autorizimit kërkon 2 pikëpresje në fund!
+Proçesi i implementimit të pagesës është pak i komplikuar nëse nuk di ç'bën dhe për fat të keq, manualet shoqëruese nuk ndihmojnë sa duhet. Formati i gjenerimit të signature, të dhënat që dërgohen dhe mënyra se si serveri i Gateway i dërgon dhe pret kërkesat, mund të jenë irrituese për programuesit fillestarë.
 
 Këto klasa bëjnë pikërisht punën që një programues s'ka nevojë ta bëjë: gjenerimin e formatit të duhur të signature për autorizim, leximin e kërkesës nga Gateway dhe dërgimin e sinjalit të suksesit apo të kthimit mbrapsht të transkasionit. Gjithçka tjetër mbetet në dorën tuaj.
 
@@ -33,7 +33,9 @@ Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.p
 
 ### Composer
 
-[Composer](http://getcomposer.org/) është në fakt mënyra më e lehtë dhe e këshilluar për çdo librari. Fillimisht, përfshini paketën në composer.json:
+[Composer](http://getcomposer.org/) është në fakt mënyra më e lehtë dhe e këshilluar për çdo librari. Praktikisht çdo framework modern për PHP (Zend Framework, Symfony, Laravel, etj) shfrytëzon Composer për të menaxhuar paketat.
+
+Fillimisht, përfshini paketën në composer.json:
 
 ```json
 "require": { "fadion/raiffeisen": "dev-master" }
@@ -79,11 +81,24 @@ $options = array(
 	'purchase_time' => date('ymdHis', strtotime('-1 hour')), // koha kur eshte kryer porosia
 	'order_id' => '11EE5D', // ID e porosise
 	'currency_id' => 'usd', // Valuta (all, usd, eur)
+	'session_data' => 'abc', // Sesioni
 	'cert_dir' => 'cert/dir' // Direktoria ku ndodhet certifikata
 );
 
 $auth = new Raiffeisen\Authenticate('111', '222', 3500, $options);
-$data = $auth->generate();
+?>
+```
+
+ID e porosisë, përveç se si String, mund të kalohet edhe si funksion anonim për ta kryer aty logjikën e gjenerimit:
+
+```php
+<?php
+$user_id = 10;
+$auth = new Raiffeisen\Authenticate('111', '222', 3500, array(
+		'order_id' => function() use($user_id)
+		{
+			return uniqid().$user_id;
+		}));
 ?>
 ```
 
@@ -106,6 +121,7 @@ $data = $auth->generate();
 	<input type="hidden" name="locale" value="sq">
 	<input type="hidden" name="PurchaseTime" value="<?php echo $data['purchase_time']; ?>">
 	<input type="hidden" name="OrderID" value="<?php echo $data['order_id']; ?>">
+	<input type="hidden" name="SD" value="<?php echo $data['session_data']; ?>">
 	<input type="hidden" name="Signature" value="<?php echo $data['signature']; ?>">
 	<button type="submit">Paguaj</button>
 </form>
@@ -113,7 +129,7 @@ $data = $auth->generate();
 
 ## Proçesimi i Pagesës
 
-Pas autorizimit dhe dërgimit të të dhënave, blerësit mund të fusë kartën e kreditit. Nëse karta është e vlefshme dhe ka fonde, Gateway do i dërgojë një kërkesë serverit tuaj për ta autorizuar pagesën. Ka 2 mënyra për ta pritur atë kërkesë:
+Pas autorizimit dhe dërgimit të të dhënave, blerësi mund të fusë kartën e kreditit. Nëse karta është e vlefshme dhe ka fonde, Gateway do i dërgojë një kërkesë serverit tuaj për ta autorizuar pagesën. Ka 2 mënyra për ta pritur atë kërkesë:
 
 1. Përmes browseri-t të blerësit, i cili kthehet tek faqja juaj me disa të dhëna POST. Përveç faktit që përfshihet blerësi në proçesim dhe s'ka pse, pika më negative është se s'ka asnjë mënyrë për ta validuar porosinë dhe për ta anulluar nëse ndodhi ndonjë problem në server.
 
@@ -121,7 +137,7 @@ Pas autorizimit dhe dërgimit të të dhënave, blerësit mund të fusë kartën
 
 Ne do merremi me mënyrën e dytë dhe çdo njeri me pak sens logjik, duhet të ndjekë të njëjtën rrugë. Dokumentimi i Raiffeisen do ju shpjegojë implementimin e të dyja mënyrave.
 
-Duke qenë se kërkesa nga serveri i Gateway dërgohet si POST, edhe klasa merr disa të dhëna përmes saj. Nisja e klasës duhet kryer duke i kaluar 3 parametra: adresa e suksesit (absolute), adresa e deshtimit (absolute) dhe superglobalen $_POST.
+Duke qenë se kërkesa nga serveri i Gateway dërgohet si POST, edhe klasa merr disa të dhëna përmes saj. Nisja e klasës duhet kryer duke i kaluar 3 parametra: adresa e suksesit (absolute), adresa e dështimit (absolute) dhe superglobalen $_POST. Adresa e suksesit dhe ajo e dështimit janë URL-të ku blerësi do të drejtohet pas proçesimit të pagesës.
 
 ```php
 <?php
@@ -135,9 +151,8 @@ Ofrohen disa metoda për të thjeshtësuar përgjigjen.
 <?php
 $notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 
-// Kontrollon nese kerkesa nga serveri
-// eshte e vlefshme. Parametri qe duhet
-// kaluar eshte IP e serverit te Gateway.
+// Kontrollon nese kerkesa vjen nga serveri
+// i Gateway dhe transaksioni eshte i vlefshem.
 $notify->isValid('1.1.1.1');
 
 // Kthen pergjigje pozitive. Transaksioni kryhet.

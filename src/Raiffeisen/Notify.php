@@ -13,8 +13,7 @@ namespace Raiffeisen;
  *
  * @package Raiffeisen\Notify
  * @author Fadion Dashi
- * @version 1.0
- * @since 1.0
+ * @version 1.1.0
  */
 class Notify
 {
@@ -66,23 +65,24 @@ class Notify
 	 */
 	public static function factory($success_url, $error_url, $post_data)
 	{
-		retur new self($success_url, $error_url, $post_data);
+		return new self($success_url, $error_url, $post_data);
 	}
 
 	/**
 	 * Kontrollon nese kerkesa nga serveri i Gateway
 	 * eshte e vlefshme.
 	 * 
-	 * @param string $referer Serveri i Gateway nga pritet kerkesa
+	 * @param string $ip IP e serverit te Gateway nga pritet kerkesa
 	 * @return bool
 	 */
-	public function isValid($referer)
+	public function isValid($ip)
 	{
 		// Kodi i Transaksionit (TranCode) duhet te jete '000', qe
 		// tregon se transaksioni ne anen e bankes ka qene i suksesshem.
-		// Kontrollohet edhe referuesi gjithashtu, per te tentuar
-		// te shmange abuzimin.
-		if ($this->post['TranCode'] == '000' and $_SERVER['HTTP_REFERER'] == $referer)
+		// Kontrollohet edhe referuesi dhe IP gjithashtu, per te tentuar
+		// te shmange kerkesat e nisura manualisht nga dashakeqes.
+		if ($this->post['TranCode'] == '000' and 
+			($_SERVER['HTTP_REFERER'] == $ip or $_SERVER['REMOTE_ADDR'] == $ip))
 		{
 			return true;
 		}
