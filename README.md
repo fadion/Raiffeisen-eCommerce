@@ -38,7 +38,7 @@ Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.p
 Fillimisht, përfshini paketën në composer.json:
 
 ```json
-"require": { "fadion/raiffeisen": "dev-master" }
+"require": { "fadion/raiffeisen": "~1.0" }
 ```
 
 Instalojeni paketën:
