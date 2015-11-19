@@ -187,3 +187,7 @@ if ($notify->isValid('1.1.1.1')) {
 }
 ?>
 ```
+
+## Përgjegjësia
+
+As unë dhe as kjo paketë nuk ka asnjë lidhje me Raiffeisen. Qëllimi i paketës është t'ju ndihmojë të integroni sistemin eCommerce të bankës, por unë, si autor i saj, nuk mbaj asnjë përgjegjësi për probleme që mund të sjellë. Jeni të lirë ta përdorni dhe modifikoni si t'ju duket më mirë.
