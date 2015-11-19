@@ -1,5 +1,5 @@
 <?php
-namespace Raiffeisen;
+namespace Fadion\Raiffeisen;
 
 /**
  * Authenticate

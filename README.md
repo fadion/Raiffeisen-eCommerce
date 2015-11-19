@@ -12,7 +12,7 @@ Krahas kodit, do të lexoni edhe disa këshilla apo praktika të mira për imple
 
 ## Varësitë
 
-Një version i PHP-së më i lartë se 5.3.0 dhe kompilim i PHP-së me [OpenSSL](http://www.php.net/manual/en/openssl.installation.php). Kjo e fundit duhet për shënjimin e çertifikatës.
+Një version i PHP-së më i lartë se 5.4.0 dhe kompilim i PHP-së me [OpenSSL](http://www.php.net/manual/en/openssl.installation.php). Kjo e fundit duhet për shënjimin e çertifikatës.
 
 ## Ngarkimi i Klasave
 
@@ -22,14 +22,14 @@ Kjo është strategji që varet nga aplikacioni apo framework-u që po përdorni
 
 ```php
 <?php
-require_once('src/Raiffeisen/Authenticate.php');
-require_once('src/Raiffeisen/Notify.php');
+require_once('src/Authenticate.php');
+require_once('src/Notify.php');
 ?>
 ```
 
 ### Autoloader
 
-Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-0.
+Mund të jetë një implementim i juaji i [spl_autoload_register()](http://www.php.net/manual/en/function.spl-autoload-register.php) apo të ndonjë autoloaderi si [ClassLoader](https://github.com/symfony/ClassLoader) i Symfony. Organizimi i direktorive, namescapes dhe emrat e klasave ndjekin standartin psr-4.
 
 ### Composer
 
@@ -51,8 +51,8 @@ Fillojeni ta përdorni
 <?php
 require 'vendor/autoload.php';
 
-$auth = new Raiffeisen\Authenticate(...);
-$notify = new Raiffeisen\Notify(...);
+$auth = new Fadion\Raiffeisen\Authenticate(...);
+$notify = new Fadion\Raiffeisen\Notify(...);
 ?>
 ```
 
@@ -64,11 +64,13 @@ Nisni klasën e autorizimit duke i kaluar disa parametra. MerchantID dhe Termina
 
 ```php
 <?php
+use Fadion\Raiffeisen\Authenticate;
+
 $merchant_id = '111';
 $terminal_id = '222';
 $total = 3500;
 
-$auth = new Raiffeisen\Authenticate($merchant_id, $terminal_id, $total);
+$auth = new Authenticate($merchant_id, $terminal_id, $total);
 $data = $auth->generate();
 ?>
 ```
@@ -77,15 +79,15 @@ Gjithashtu mund të kaloni disa parametra opsionalë nëse doni ti mbivendosni a
 
 ```php
 <?php
-$options = array(
+$options = [
 	'purchase_time' => date('ymdHis', strtotime('-1 hour')), // koha kur eshte kryer porosia
 	'order_id' => '11EE5D', // ID e porosise
 	'currency_id' => 'usd', // Valuta (all, usd, eur)
 	'session_data' => 'abc', // Sesioni
 	'cert_dir' => 'cert/dir' // Direktoria ku ndodhet certifikata
-);
+];
 
-$auth = new Raiffeisen\Authenticate('111', '222', 3500, $options);
+$auth = new Authenticate('111', '222', 3500, $options);
 ?>
 ```
 
@@ -94,11 +96,10 @@ ID e porosisë, përveç se si String, mund të kalohet edhe si funksion anonim 
 ```php
 <?php
 $user_id = 10;
-$auth = new Raiffeisen\Authenticate('111', '222', 3500, array(
-		'order_id' => function() use($user_id)
-		{
+$auth = new Authenticate('111', '222', 3500, [
+		'order_id' => function() use($user_id) {
 			return uniqid().$user_id;
-		}));
+		}]);
 ?>
 ```
 
@@ -106,7 +107,7 @@ Ajo që metoda generate() ju kthen është një Array me të gjitha parametrat q
 
 ```php
 <?php
-$auth = new Raiffeisen\Authenticate('111', '222', 3500);
+$auth = new Authenticate('111', '222', 3500);
 $data = $auth->generate();
 ?>
 ```
@@ -141,7 +142,9 @@ Duke qenë se kërkesa nga serveri i Gateway dërgohet si POST, edhe klasa merr 
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
+use Fadion\Raiffeisen\Notify;
+
+$notify = new Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 ?>
 ```
 
@@ -149,7 +152,7 @@ Ofrohen disa metoda për të thjeshtësuar përgjigjen.
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
+$notify = new Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 
 // Kontrollon nese kerkesa vjen nga serveri
 // i Gateway dhe transaksioni eshte i vlefshem.
@@ -170,19 +173,15 @@ Një rend pune tipik do të ishte si në vijim:
 
 ```php
 <?php
-$notify = new Raiffeisen\Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
+$notify = new Notify('http://adresa/suksesit', 'http://adresa/deshtimit', $_POST);
 
-if ($notify->isValid('1.1.1.1'))
-{
+if ($notify->isValid('1.1.1.1')) {
 	// valido porosine, stokun, etj.
 
-	// nese porosia eshte ne rregull.
-	if (...)
-	{
+	if (/* porosia eshte ne rregull */) {
 		echo $notify->success();
 	}
-	else
-	{
+	else {
 		echo $notify->error();
 	}
 }
