@@ -85,7 +85,7 @@ class Notify
 	{
 		$this->url = $this->successUrl;
 
-		return $this->output('success');
+		return $this->output('approve');
 	}
 
 	/**
